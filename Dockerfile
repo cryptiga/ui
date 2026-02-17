@@ -4,6 +4,7 @@ COPY package.json package-lock.json ./
 RUN npm ci
 COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
+ENV BACKTEST_API_URL=http://backtest-api:8001
 RUN npm run build
 
 FROM node:22-alpine
