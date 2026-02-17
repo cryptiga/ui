@@ -18,5 +18,31 @@ services:
       timescaledb:
         condition: service_healthy
 
+  backtest-api:
+    build:
+      context: ../analytics
+      dockerfile: Dockerfile
+      target: backtest-api
+    ports:
+      - "8001:8001"
+    environment:
+      - DATABASE_URL=postgresql://cryptiga:cryptiga@timescaledb:5432/cryptiga
+    depends_on:
+      timescaledb:
+        condition: service_healthy
+
+  ui:
+    build:
+      context: ../ui
+      dockerfile: Dockerfile
+    ports:
+      - "3001:3001"
+    environment:
+      - BACKTEST_API_URL=http://backtest-api:8001
+      - PORT=3001
+      - HOSTNAME=0.0.0.0
+    depends_on:
+      - backtest-api
+
 volumes:
   grafana_data:
