@@ -1,0 +1,109 @@
+{
+  "uid": "price-onchain",
+  "title": "Price & On-Chain",
+  "tags": ["cryptiga", "analysis"],
+  "timezone": "browser",
+  "editable": true,
+  "graphTooltip": 2,
+  "schemaVersion": 39,
+  "version": 0,
+  "refresh": "5m",
+  "time": { "from": "now-7d", "to": "now" },
+  "templating": {
+    "list": [
+      {
+        "name": "coin",
+        "label": "Coin",
+        "type": "query",
+        "datasource": { "type": "postgres", "uid": "timescaledb" },
+        "query": "SELECT DISTINCT coin FROM price_candles ORDER BY coin",
+        "refresh": 1,
+        "current": { "text": "BTC/USD", "value": "BTC/USD" }
+      },
+      {
+        "name": "metric",
+        "label": "On-Chain Metric",
+        "type": "query",
+        "datasource": { "type": "postgres", "uid": "timescaledb" },
+        "query": "SELECT DISTINCT source || '/' || metric AS __text, metric AS __value FROM on_chain_metrics ORDER BY 1",
+        "refresh": 1,
+        "current": { "text": "blockchain.com/hash_rate", "value": "hash_rate" }
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1,
+      "type": "candlestick",
+      "title": "$coin Price",
+      "gridPos": { "x": 0, "y": 0, "w": 24, "h": 10 },
+      "datasource": { "type": "postgres", "uid": "timescaledb" },
+      "targets": [{
+        "refId": "A",
+        "rawSql": "SELECT timestamp AS time, open, high, low, close, volume FROM price_candles WHERE coin = '$coin' AND timeframe = '1h' AND $__timeFilter(timestamp) ORDER BY timestamp",
+        "format": "time_series"
+      }],
+      "fieldConfig": { "defaults": {}, "overrides": [] },
+      "options": { "mode": "candles", "colorStrategy": "open-close" }
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "On-Chain: $metric",
+      "gridPos": { "x": 0, "y": 10, "w": 24, "h": 8 },
+      "datasource": { "type": "postgres", "uid": "timescaledb" },
+      "targets": [{
+        "refId": "A",
+        "rawSql": "SELECT timestamp AS time, value AS \"$metric\" FROM on_chain_metrics WHERE metric = '$metric' AND $__timeFilter(timestamp) ORDER BY timestamp",
+        "format": "time_series"
+      }],
+      "fieldConfig": { "defaults": { "custom": { "fillOpacity": 10 } }, "overrides": [] },
+      "options": {}
+    },
+    {
+      "id": 3,
+      "type": "timeseries",
+      "title": "Mempool Fees (sat/vB)",
+      "gridPos": { "x": 0, "y": 18, "w": 12, "h": 8 },
+      "datasource": { "type": "postgres", "uid": "timescaledb" },
+      "targets": [{
+        "refId": "A",
+        "rawSql": "SELECT timestamp AS time, value AS \"Fee Rate\" FROM on_chain_metrics WHERE metric IN ('fastest_fee', 'half_hour_fee', 'hour_fee', 'economy_fee') AND $__timeFilter(timestamp) ORDER BY timestamp",
+        "format": "time_series"
+      }],
+      "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
+      "options": {}
+    },
+    {
+      "id": 4,
+      "type": "timeseries",
+      "title": "Mempool Size",
+      "gridPos": { "x": 12, "y": 18, "w": 12, "h": 8 },
+      "datasource": { "type": "postgres", "uid": "timescaledb" },
+      "targets": [
+        {
+          "refId": "A",
+          "rawSql": "SELECT timestamp AS time, value AS \"TX Count\" FROM on_chain_metrics WHERE metric = 'mempool_count' AND $__timeFilter(timestamp) ORDER BY timestamp",
+          "format": "time_series"
+        }
+      ],
+      "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
+      "options": {}
+    },
+    {
+      "id": 5,
+      "type": "table",
+      "title": "Latest On-Chain Metrics",
+      "gridPos": { "x": 0, "y": 26, "w": 24, "h": 8 },
+      "datasource": { "type": "postgres", "uid": "timescaledb" },
+      "targets": [{
+        "refId": "A",
+        "rawSql": "SELECT DISTINCT ON (source, metric) source AS \"Source\", metric AS \"Metric\", value AS \"Value\", timestamp AS \"Last Updated\" FROM on_chain_metrics ORDER BY source, metric, timestamp DESC",
+        "format": "table"
+      }],
+      "fieldConfig": { "defaults": {}, "overrides": [] },
+      "options": {}
+    }
+  ],
+  "annotations": { "list": [] }
+}
