@@ -24,12 +24,17 @@ export default function HistoryPage() {
   const [runs, setRuns] = useState<Run[]>([]);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
   const router = useRouter();
 
   useEffect(() => {
     fetch("/api/backtest/runs")
-      .then((r) => r.json())
+      .then((r) => {
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
+        return r.json();
+      })
       .then(setRuns)
+      .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
   }, []);
 
@@ -70,9 +75,15 @@ export default function HistoryPage() {
           </div>
         </div>
 
+        {error && (
+          <div className="mb-4 p-4 bg-red-900/50 border border-red-700 rounded-lg text-red-300">
+            Failed to load runs: {error}
+          </div>
+        )}
+
         {loading ? (
           <p className="text-gray-400">Loading...</p>
-        ) : runs.length === 0 ? (
+        ) : runs.length === 0 && !error ? (
           <p className="text-gray-400">No backtest runs yet. <Link href="/backtest" className="text-blue-400">Run one now.</Link></p>
         ) : (
           <div className="overflow-x-auto">

@@ -54,19 +54,29 @@ function CompareContent() {
   const searchParams = useSearchParams();
   const [runs, setRuns] = useState<Run[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     const ids = searchParams.get("ids")?.split(",") || [];
+    if (ids.length < 2) {
+      setLoading(false);
+      return;
+    }
     Promise.all(
       ids.map((id) =>
-        fetch(`/api/backtest/runs/${id}`).then((r) => r.json())
+        fetch(`/api/backtest/runs/${id}`).then((r) => {
+          if (!r.ok) throw new Error(`Failed to fetch run ${id}: HTTP ${r.status}`);
+          return r.json();
+        })
       )
     )
       .then(setRuns)
+      .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
   }, [searchParams]);
 
   if (loading) return <p className="text-gray-400">Loading...</p>;
+  if (error) return <div className="p-4 bg-red-900/50 border border-red-700 rounded-lg text-red-300">{error}</div>;
   if (runs.length < 2) return <p className="text-gray-400">Select at least 2 runs to compare.</p>;
 
   // Merge equity curves for overlay chart
