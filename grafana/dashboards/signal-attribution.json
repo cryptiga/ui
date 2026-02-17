@@ -1,0 +1,113 @@
+{
+  "uid": "signal-attribution",
+  "title": "Signal Attribution",
+  "tags": ["cryptiga", "analysis"],
+  "timezone": "browser",
+  "editable": true,
+  "graphTooltip": 1,
+  "schemaVersion": 39,
+  "version": 0,
+  "refresh": "5m",
+  "time": { "from": "now-30d", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "type": "table",
+      "title": "Attribution by Signal Source",
+      "description": "Performance of each signal source based on trades where that signal was present",
+      "gridPos": { "x": 0, "y": 0, "w": 24, "h": 8 },
+      "datasource": { "type": "postgres", "uid": "timescaledb" },
+      "targets": [{
+        "refId": "A",
+        "rawSql": "WITH signal_trades AS ( SELECT t.*, s.value->>'source' AS signal_source, s.value->>'direction' AS signal_direction, (s.value->>'confidence')::int AS signal_confidence FROM trades t, jsonb_array_elements(t.signals_snapshot) AS s WHERE $__timeFilter(t.timestamp) ) SELECT signal_source AS \"Source\", COUNT(*) AS \"Trades\", COUNT(*) FILTER (WHERE side = 'sell') AS \"Closed\", ROUND(AVG(signal_confidence)) AS \"Avg Confidence\", COUNT(DISTINCT coin) AS \"Coins\" FROM signal_trades GROUP BY signal_source ORDER BY \"Trades\" DESC",
+        "format": "table"
+      }],
+      "fieldConfig": { "defaults": {}, "overrides": [] },
+      "options": {}
+    },
+    {
+      "id": 2,
+      "type": "barchart",
+      "title": "Trade Count by Signal Source",
+      "gridPos": { "x": 0, "y": 8, "w": 12, "h": 8 },
+      "datasource": { "type": "postgres", "uid": "timescaledb" },
+      "targets": [{
+        "refId": "A",
+        "rawSql": "WITH signal_trades AS ( SELECT s.value->>'source' AS source FROM trades t, jsonb_array_elements(t.signals_snapshot) AS s WHERE $__timeFilter(t.timestamp) ) SELECT source AS \"Source\", COUNT(*) AS \"Trades\" FROM signal_trades GROUP BY source ORDER BY \"Trades\" DESC",
+        "format": "table"
+      }],
+      "fieldConfig": { "defaults": { "color": { "mode": "palette-classic" } }, "overrides": [] },
+      "options": {}
+    },
+    {
+      "id": 3,
+      "type": "barchart",
+      "title": "Realized P&L by Coin",
+      "gridPos": { "x": 12, "y": 8, "w": 12, "h": 8 },
+      "datasource": { "type": "postgres", "uid": "timescaledb" },
+      "targets": [{
+        "refId": "A",
+        "rawSql": "SELECT coin AS \"Coin\", ROUND(SUM(realized_pnl)::numeric, 2) AS \"Total P&L\" FROM positions WHERE closed_at IS NOT NULL AND $__timeFilter(closed_at) GROUP BY coin ORDER BY \"Total P&L\" DESC",
+        "format": "table"
+      }],
+      "fieldConfig": {
+        "defaults": {
+          "color": { "mode": "palette-classic" },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "green", "value": 0 }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {}
+    },
+    {
+      "id": 4,
+      "type": "timeseries",
+      "title": "Signal Frequency by Source Over Time",
+      "gridPos": { "x": 0, "y": 16, "w": 24, "h": 8 },
+      "datasource": { "type": "postgres", "uid": "timescaledb" },
+      "targets": [{
+        "refId": "A",
+        "rawSql": "SELECT time_bucket('1 day', timestamp) AS time, source AS metric, COUNT(*) AS value FROM signals WHERE $__timeFilter(timestamp) GROUP BY 1, source ORDER BY 1",
+        "format": "time_series"
+      }],
+      "fieldConfig": { "defaults": { "custom": { "drawStyle": "bars", "fillOpacity": 80, "stacking": { "mode": "normal" } } }, "overrides": [] },
+      "options": {}
+    },
+    {
+      "id": 5,
+      "type": "timeseries",
+      "title": "Cumulative P&L",
+      "gridPos": { "x": 0, "y": 24, "w": 24, "h": 8 },
+      "datasource": { "type": "postgres", "uid": "timescaledb" },
+      "targets": [{
+        "refId": "A",
+        "rawSql": "SELECT closed_at AS time, SUM(realized_pnl) OVER (ORDER BY closed_at) AS \"Cumulative P&L\" FROM positions WHERE closed_at IS NOT NULL AND $__timeFilter(closed_at) ORDER BY closed_at",
+        "format": "time_series"
+      }],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "currencyUSD",
+          "custom": { "fillOpacity": 10 },
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              { "color": "red", "value": null },
+              { "color": "green", "value": 0 }
+            ]
+          },
+          "color": { "mode": "thresholds" }
+        },
+        "overrides": []
+      },
+      "options": {}
+    }
+  ],
+  "templating": { "list": [] },
+  "annotations": { "list": [] }
+}
