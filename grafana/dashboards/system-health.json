@@ -1,0 +1,163 @@
+{
+  "uid": "system-health",
+  "title": "System Health",
+  "tags": ["cryptiga", "monitoring"],
+  "timezone": "browser",
+  "editable": true,
+  "graphTooltip": 1,
+  "schemaVersion": 39,
+  "version": 0,
+  "refresh": "30s",
+  "time": { "from": "now-24h", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "type": "stat",
+      "title": "Price Candles",
+      "description": "Total candle records in database",
+      "gridPos": { "x": 0, "y": 0, "w": 6, "h": 4 },
+      "datasource": { "type": "postgres", "uid": "timescaledb" },
+      "targets": [{
+        "refId": "A",
+        "rawSql": "SELECT COUNT(*) AS \"Total Candles\" FROM price_candles",
+        "format": "table"
+      }],
+      "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] } }
+    },
+    {
+      "id": 2,
+      "type": "stat",
+      "title": "Signals",
+      "description": "Total signals generated",
+      "gridPos": { "x": 6, "y": 0, "w": 6, "h": 4 },
+      "datasource": { "type": "postgres", "uid": "timescaledb" },
+      "targets": [{
+        "refId": "A",
+        "rawSql": "SELECT COUNT(*) AS \"Total Signals\" FROM signals",
+        "format": "table"
+      }],
+      "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] } }
+    },
+    {
+      "id": 3,
+      "type": "stat",
+      "title": "On-Chain Metrics",
+      "description": "Total on-chain data points",
+      "gridPos": { "x": 12, "y": 0, "w": 6, "h": 4 },
+      "datasource": { "type": "postgres", "uid": "timescaledb" },
+      "targets": [{
+        "refId": "A",
+        "rawSql": "SELECT COUNT(*) AS \"Total Metrics\" FROM on_chain_metrics",
+        "format": "table"
+      }],
+      "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] } }
+    },
+    {
+      "id": 4,
+      "type": "stat",
+      "title": "Trades",
+      "description": "Total trades executed",
+      "gridPos": { "x": 18, "y": 0, "w": 6, "h": 4 },
+      "datasource": { "type": "postgres", "uid": "timescaledb" },
+      "targets": [{
+        "refId": "A",
+        "rawSql": "SELECT COUNT(*) AS \"Total Trades\" FROM trades",
+        "format": "table"
+      }],
+      "fieldConfig": { "defaults": { "unit": "short" }, "overrides": [] },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] } }
+    },
+    {
+      "id": 5,
+      "type": "stat",
+      "title": "Latest Candle",
+      "description": "Most recent candle timestamp",
+      "gridPos": { "x": 0, "y": 4, "w": 6, "h": 3 },
+      "datasource": { "type": "postgres", "uid": "timescaledb" },
+      "targets": [{
+        "refId": "A",
+        "rawSql": "SELECT MAX(timestamp) AS \"Latest Candle\" FROM price_candles",
+        "format": "table"
+      }],
+      "fieldConfig": { "defaults": { "unit": "dateTimeAsIso" }, "overrides": [] },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] } }
+    },
+    {
+      "id": 6,
+      "type": "stat",
+      "title": "Latest Signal",
+      "description": "Most recent signal timestamp",
+      "gridPos": { "x": 6, "y": 4, "w": 6, "h": 3 },
+      "datasource": { "type": "postgres", "uid": "timescaledb" },
+      "targets": [{
+        "refId": "A",
+        "rawSql": "SELECT MAX(timestamp) AS \"Latest Signal\" FROM signals",
+        "format": "table"
+      }],
+      "fieldConfig": { "defaults": { "unit": "dateTimeAsIso" }, "overrides": [] },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] } }
+    },
+    {
+      "id": 7,
+      "type": "stat",
+      "title": "Latest On-Chain",
+      "description": "Most recent on-chain collection",
+      "gridPos": { "x": 12, "y": 4, "w": 6, "h": 3 },
+      "datasource": { "type": "postgres", "uid": "timescaledb" },
+      "targets": [{
+        "refId": "A",
+        "rawSql": "SELECT MAX(timestamp) AS \"Latest On-Chain\" FROM on_chain_metrics",
+        "format": "table"
+      }],
+      "fieldConfig": { "defaults": { "unit": "dateTimeAsIso" }, "overrides": [] },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] } }
+    },
+    {
+      "id": 8,
+      "type": "stat",
+      "title": "Active Signals",
+      "description": "Signals not yet expired",
+      "gridPos": { "x": 18, "y": 4, "w": 6, "h": 3 },
+      "datasource": { "type": "postgres", "uid": "timescaledb" },
+      "targets": [{
+        "refId": "A",
+        "rawSql": "SELECT COUNT(*) AS \"Active\" FROM signals WHERE expires_at > NOW()",
+        "format": "table"
+      }],
+      "fieldConfig": { "defaults": { "unit": "short", "color": { "mode": "fixed", "fixedColor": "green" } }, "overrides": [] },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] } }
+    },
+    {
+      "id": 9,
+      "type": "timeseries",
+      "title": "Data Ingestion Rate",
+      "description": "New records per hour by table",
+      "gridPos": { "x": 0, "y": 7, "w": 24, "h": 8 },
+      "datasource": { "type": "postgres", "uid": "timescaledb" },
+      "targets": [
+        {
+          "refId": "A",
+          "rawSql": "SELECT time_bucket('1 hour', timestamp) AS time, COUNT(*) AS \"Candles\" FROM price_candles WHERE $__timeFilter(timestamp) GROUP BY 1 ORDER BY 1",
+          "format": "time_series"
+        },
+        {
+          "refId": "B",
+          "rawSql": "SELECT time_bucket('1 hour', timestamp) AS time, COUNT(*) AS \"Signals\" FROM signals WHERE $__timeFilter(timestamp) GROUP BY 1 ORDER BY 1",
+          "format": "time_series"
+        },
+        {
+          "refId": "C",
+          "rawSql": "SELECT time_bucket('1 hour', timestamp) AS time, COUNT(*) AS \"On-Chain\" FROM on_chain_metrics WHERE $__timeFilter(timestamp) GROUP BY 1 ORDER BY 1",
+          "format": "time_series"
+        }
+      ],
+      "fieldConfig": { "defaults": { "custom": { "drawStyle": "bars", "fillOpacity": 50 } }, "overrides": [] },
+      "options": {}
+    }
+  ],
+  "templating": { "list": [] },
+  "annotations": { "list": [] }
+}
