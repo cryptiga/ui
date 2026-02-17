@@ -11,9 +11,9 @@ services:
       - GF_AUTH_DISABLE_LOGIN_FORM=true
     volumes:
       - grafana_data:/var/lib/grafana
-      - ./grafana/provisioning/datasources:/etc/grafana/provisioning/datasources
-      - ./grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards
-      - ./grafana/dashboards:/var/lib/grafana/dashboards
+      - ../ui/grafana/provisioning/datasources:/etc/grafana/provisioning/datasources
+      - ../ui/grafana/provisioning/dashboards:/etc/grafana/provisioning/dashboards
+      - ../ui/grafana/dashboards:/var/lib/grafana/dashboards
     depends_on:
       timescaledb:
         condition: service_healthy
