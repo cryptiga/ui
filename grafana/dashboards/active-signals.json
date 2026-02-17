@@ -1,0 +1,98 @@
+{
+  "uid": "active-signals",
+  "title": "Active Signals",
+  "tags": ["cryptiga", "monitoring"],
+  "timezone": "browser",
+  "editable": true,
+  "graphTooltip": 1,
+  "schemaVersion": 39,
+  "version": 0,
+  "refresh": "30s",
+  "time": { "from": "now-24h", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "type": "table",
+      "title": "Currently Active Signals",
+      "gridPos": { "x": 0, "y": 0, "w": 24, "h": 8 },
+      "datasource": { "type": "postgres", "uid": "timescaledb" },
+      "targets": [{
+        "refId": "A",
+        "rawSql": "SELECT coin AS \"Coin\", source AS \"Source\", direction AS \"Direction\", confidence AS \"Confidence\", timestamp AS \"Created\", expires_at AS \"Expires\" FROM signals WHERE expires_at > NOW() ORDER BY confidence DESC",
+        "format": "table"
+      }],
+      "fieldConfig": {
+        "defaults": {},
+        "overrides": [
+          {
+            "matcher": { "id": "byName", "options": "Direction" },
+            "properties": [{
+              "id": "custom.cellOptions",
+              "value": {
+                "type": "color-text"
+              }
+            }, {
+              "id": "mappings",
+              "value": [
+                { "type": "value", "options": { "bullish": { "text": "BULLISH", "color": "green" }, "bearish": { "text": "BEARISH", "color": "red" } } }
+              ]
+            }]
+          }
+        ]
+      },
+      "options": {}
+    },
+    {
+      "id": 2,
+      "type": "timeseries",
+      "title": "Signal Frequency Over Time",
+      "gridPos": { "x": 0, "y": 8, "w": 24, "h": 8 },
+      "datasource": { "type": "postgres", "uid": "timescaledb" },
+      "targets": [
+        {
+          "refId": "A",
+          "rawSql": "SELECT time_bucket('1 hour', timestamp) AS time, COUNT(*) FILTER (WHERE direction = 'bullish') AS \"Bullish\", COUNT(*) FILTER (WHERE direction = 'bearish') AS \"Bearish\" FROM signals WHERE $__timeFilter(timestamp) GROUP BY 1 ORDER BY 1",
+          "format": "time_series"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": { "custom": { "drawStyle": "bars", "fillOpacity": 80, "stacking": { "mode": "normal" } } },
+        "overrides": [
+          { "matcher": { "id": "byName", "options": "Bullish" }, "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "green" } }] },
+          { "matcher": { "id": "byName", "options": "Bearish" }, "properties": [{ "id": "color", "value": { "mode": "fixed", "fixedColor": "red" } }] }
+        ]
+      },
+      "options": {}
+    },
+    {
+      "id": 3,
+      "type": "barchart",
+      "title": "Signals by Source",
+      "gridPos": { "x": 0, "y": 16, "w": 12, "h": 8 },
+      "datasource": { "type": "postgres", "uid": "timescaledb" },
+      "targets": [{
+        "refId": "A",
+        "rawSql": "SELECT source AS \"Source\", COUNT(*) AS \"Count\" FROM signals WHERE $__timeFilter(timestamp) GROUP BY source ORDER BY \"Count\" DESC",
+        "format": "table"
+      }],
+      "fieldConfig": { "defaults": { "color": { "mode": "palette-classic" } }, "overrides": [] },
+      "options": {}
+    },
+    {
+      "id": 4,
+      "type": "barchart",
+      "title": "Average Confidence by Source",
+      "gridPos": { "x": 12, "y": 16, "w": 12, "h": 8 },
+      "datasource": { "type": "postgres", "uid": "timescaledb" },
+      "targets": [{
+        "refId": "A",
+        "rawSql": "SELECT source AS \"Source\", ROUND(AVG(confidence)) AS \"Avg Confidence\" FROM signals WHERE $__timeFilter(timestamp) GROUP BY source ORDER BY \"Avg Confidence\" DESC",
+        "format": "table"
+      }],
+      "fieldConfig": { "defaults": { "color": { "mode": "palette-classic" }, "max": 100 }, "overrides": [] },
+      "options": {}
+    }
+  ],
+  "templating": { "list": [] },
+  "annotations": { "list": [] }
+}
